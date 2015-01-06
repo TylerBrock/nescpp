@@ -1,6 +1,7 @@
 #include <cstdint>
 #include <functional>
 #include <string>
+#include <unordered_map>
 
 namespace NES {
 
@@ -69,17 +70,25 @@ namespace NES {
             N = 0x80, // Negative Flag
         };
 
+        enum class Vector: std::uint16_t {
+            NMI       = 0xFFFA, // Triggered on VBlank
+            RESET     = 0xFFFC, // Triggered on power-up/reset
+            IRQ_BREAK = 0xFFFE, // Triggered on Break or hardware IRQ
+        };
+
         // TODO: check if these are what we need
         enum class AddressingMode: std::uint8_t {
-            Implicit,
-            ZeroPage,
-            ZeroPageX,
-            ZeroPageY,
             Absolute,
             AbsoluteX,
             AbsoluteY,
             Immediate,
-            Relative
+            Implicit,
+            IndirectX,
+            IndirectY,
+            Relative,
+            ZeroPage,
+            ZeroPageX,
+            ZeroPageY,
         };
 
         struct Operation {
@@ -88,7 +97,7 @@ namespace NES {
             std::uint64_t standard_cycles;
             std::uint64_t extra_cycles;
             AddressingMode addressing_mode;
-        }
+        };
 
         // Add with Carry
         void _adc();
@@ -258,12 +267,20 @@ namespace NES {
         // Transfer Y to A
         void _tya();
 
+        // Status Flags
+        void _setFlag(StatusFlag flag, bool setting);
+        bool _getFlag(StatusFlag flag);
+
+        std::uint16_t _readVector(Vector);
+
         std::uint8_t _accumulator;
         std::uint8_t _x_register;
         std::uint8_t _y_register;
-        std::uint8_t _processor_status;
+        std::uint8_t _processor_status; // TODO: would this be better as a bitset?
         std::uint8_t _stack_pointer;
         std::uint16_t _program_counter;
+
+        std::unordered_map<std::uint8_t, CPU::Operation> _opcode_map;
 
         bool _debug;
         Memory* _memory;
